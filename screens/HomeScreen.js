@@ -3,149 +3,105 @@ import { collection, doc, onSnapshot, query, setDoc, where } from 'firebase/fire
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { auth, database } from '../firebaseConfig';
+// 1. NEW IMPORTS
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function HomeScreen() {
+  // ... (Keep all your existing state variables and useEffect logic exactly the same) ...
   const navigation = useNavigation();
   const [users, setUsers] = useState([]);
   const [myGroups, setMyGroups] = useState([]); 
   const [loading, setLoading] = useState(true);
-  
   const [isGroupMode, setIsGroupMode] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [groupName, setGroupName] = useState('');
-
   const currentUserEmail = auth.currentUser?.email;
 
   useEffect(() => {
-    // 1. Fetch Users
     const usersRef = collection(database, 'users');
     const unsubUsers = onSnapshot(usersRef, (querySnapshot) => {
       const usersList = [];
       querySnapshot.forEach((doc) => {
         const userData = doc.data();
-        if (userData.email !== currentUserEmail) {
-          usersList.push({ id: doc.id, ...userData });
-        }
+        if (userData.email !== currentUserEmail) usersList.push({ id: doc.id, ...userData });
       });
       setUsers(usersList);
     });
-
-    // 2. Fetch My Groups
     const groupsRef = collection(database, 'groups');
     const q = query(groupsRef, where('members', 'array-contains', currentUserEmail));
-    
     const unsubGroups = onSnapshot(q, (querySnapshot) => {
       const groupsList = [];
-      querySnapshot.forEach((doc) => {
-        groupsList.push({ id: doc.id, ...doc.data() });
-      });
+      querySnapshot.forEach((doc) => groupsList.push({ id: doc.id, ...doc.data() }));
       setMyGroups(groupsList);
       setLoading(false);
     });
-
-    return () => {
-      unsubUsers();
-      unsubGroups();
-    };
+    return () => { unsubUsers(); unsubGroups(); };
   }, []);
 
   const handleUserPress = (user) => {
-    if (isGroupMode) {
-      if (selectedUsers.includes(user.email)) {
-        setSelectedUsers(selectedUsers.filter(email => email !== user.email));
+      if (isGroupMode) {
+        if (selectedUsers.includes(user.email)) setSelectedUsers(selectedUsers.filter(email => email !== user.email));
+        else setSelectedUsers([...selectedUsers, user.email]);
       } else {
-        setSelectedUsers([...selectedUsers, user.email]);
+        navigation.navigate('Chat', { chatId: [currentUserEmail.toLowerCase(), user.email.toLowerCase()].sort().join('_'), chatName: user.username || user.email });
       }
-    } else {
-      navigation.navigate('Chat', { 
-        chatId: [currentUserEmail.toLowerCase(), user.email.toLowerCase()].sort().join('_'),
-        chatName: user.username || user.email 
-      });
-    }
   };
 
   const createGroup = async () => {
-    if (!groupName || selectedUsers.length === 0) {
-      Alert.alert("Error", "Enter a name and select at least 1 user.");
-      return;
-    }
-
+    if (!groupName || selectedUsers.length === 0) return Alert.alert("Error", "Enter name & select users.");
     const newGroupId = `GROUP_${Math.random().toString(36).substring(7)}`;
-    const membersList = [...selectedUsers, currentUserEmail]; 
-
     try {
       await setDoc(doc(database, 'groups', newGroupId), {
-        groupId: newGroupId,
-        name: groupName,
-        members: membersList,
-        createdAt: new Date(),
-        createdBy: currentUserEmail
+        groupId: newGroupId, name: groupName, members: [...selectedUsers, currentUserEmail], createdAt: new Date(), createdBy: currentUserEmail
       });
-
-      navigation.navigate('Chat', { 
-        chatId: newGroupId, 
-        chatName: groupName
-      });
-      
-      setIsGroupMode(false);
-      setSelectedUsers([]);
-      setGroupName('');
-    } catch (error) {
-      Alert.alert("Error", error.message);
-    }
+      navigation.navigate('Chat', { chatId: newGroupId, chatName: groupName });
+      setIsGroupMode(false); setSelectedUsers([]); setGroupName('');
+    } catch (error) { Alert.alert("Error", error.message); }
   };
 
-  if (loading) {
-    return (
-       <View style={[styles.container, {justifyContent:'center', alignItems:'center'}]}>
-          <ActivityIndicator size="large" color="#00f3ff"/>
-       </View>
-    );
-  }
+  if (loading) return <View style={[styles.loadingContainer]}><ActivityIndicator size="large" color="#00f3ff"/></View>;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
+    // 2. AURORA BACKGROUND
+    <LinearGradient
+        colors={['#000000', '#1A1A2E', '#16213E', '#0f3460']} // Darker, cooler aurora
+        start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
+        style={styles.container}
+    >
+      {/* 3. GLASSY HEADER */}
+      <BlurView intensity={20} tint="dark" style={styles.glassHeader}>
         <Text style={styles.header}>NEON NETWORK</Text>
         <TouchableOpacity onPress={() => setIsGroupMode(!isGroupMode)}>
           <Text style={styles.groupToggle}>{isGroupMode ? 'CANCEL' : '+ NEW GROUP'}</Text>
         </TouchableOpacity>
-      </View>
+      </BlurView>
 
       {isGroupMode && (
-        <View style={styles.groupInputContainer}>
+        <BlurView intensity={20} tint="dark" style={styles.glassInputContainer}>
           <TextInput
-            style={styles.input}
-            placeholder="ENTER GROUP NAME..."
-            placeholderTextColor="#666"
-            value={groupName}
-            onChangeText={setGroupName}
+            style={styles.input} placeholder="ENTER GROUP NAME..." placeholderTextColor="#aaa"
+            value={groupName} onChangeText={setGroupName}
           />
           <TouchableOpacity style={styles.createButton} onPress={createGroup}>
             <Text style={styles.createText}>CREATE</Text>
           </TouchableOpacity>
-        </View>
+        </BlurView>
       )}
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 50 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 50, paddingHorizontal: 15 }}>
         {/* MY GROUPS */}
         {myGroups.length > 0 && !isGroupMode && (
           <View>
             <Text style={styles.sectionTitle}>MY SQUADS</Text>
             {myGroups.map((group) => (
-              <TouchableOpacity 
-                key={group.id}
-                style={styles.groupCard}
-                onPress={() => navigation.navigate('Chat', { chatId: group.id, chatName: group.name })}
-              >
-                <View style={styles.groupAvatar}>
-                  <Text style={styles.groupAvatarText}>{group.name[0].toUpperCase()}</Text>
-                </View>
-                <View>
-                  <Text style={styles.groupNameText}>{group.name}</Text>
-                  <Text style={styles.groupMembersText}>{group.members.length} Members</Text>
-                </View>
-              </TouchableOpacity>
+              // 4. GLASSY CARDS
+              <BlurView key={group.id} intensity={15} tint="dark" style={styles.glassCardOuter}>
+                  <TouchableOpacity style={[styles.cardInner, {borderLeftColor: '#39ff14'}]} onPress={() => navigation.navigate('Chat', { chatId: group.id, chatName: group.name })}>
+                    <View style={styles.groupAvatar}><Text style={styles.groupAvatarText}>{group.name[0].toUpperCase()}</Text></View>
+                    <View><Text style={styles.nameText}>{group.name}</Text><Text style={styles.subText}>{group.members.length} Members</Text></View>
+                  </TouchableOpacity>
+              </BlurView>
             ))}
           </View>
         )}
@@ -155,89 +111,71 @@ export default function HomeScreen() {
         {users.map((item) => {
           const isSelected = selectedUsers.includes(item.email);
           return (
-            <TouchableOpacity 
-              key={item.id}
-              style={[styles.userCard, isSelected && styles.selectedCard]} 
-              onPress={() => handleUserPress(item)}
-            >
-              <View style={styles.avatar}>
-                 <Text style={styles.avatarText}>
-                   {(item.username ? item.username[0] : item.email[0]).toUpperCase()}
-                 </Text>
-              </View>
-              <View style={styles.userInfo}>
-                <Text style={styles.usernameText}>
-                  {item.username || item.email} 
-                </Text>
-                <Text style={styles.statusText}>● ONLINE</Text>
-              </View>
-              
-              {isGroupMode && (
-                <View style={[styles.checkbox, isSelected && styles.checkedBox]}>
-                  {isSelected && <Text style={{color:'#000'}}>✓</Text>}
-                </View>
-              )}
-            </TouchableOpacity>
+             // 4. GLASSY CARDS
+            <BlurView key={item.id} intensity={15} tint="dark" style={[styles.glassCardOuter, isSelected && styles.selectedGlass]}>
+                <TouchableOpacity style={[styles.cardInner, {borderLeftColor: '#00f3ff'}]} onPress={() => handleUserPress(item)}>
+                <View style={styles.avatar}><Text style={styles.avatarText}>{(item.username ? item.username[0] : item.email[0]).toUpperCase()}</Text></View>
+                <View style={styles.userInfo}><Text style={styles.nameText}>{item.username || item.email}</Text><Text style={styles.statusText}>● ONLINE</Text></View>
+                {isGroupMode && (<View style={[styles.checkbox, isSelected && styles.checkedBox]}>{isSelected && <Text style={{color:'#000'}}>✓</Text>}</View>)}
+                </TouchableOpacity>
+            </BlurView>
           );
         })}
 
-        {/* --- TERMINATE SESSION BUTTON --- */}
         <TouchableOpacity style={styles.logoutButton} onPress={() => auth.signOut()}>
           <Text style={styles.logoutText}>TERMINATE SESSION</Text>
         </TouchableOpacity>
-
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212', padding: 15 },
-  headerContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  container: { flex: 1 },
+  loadingContainer: { flex: 1, backgroundColor: '#121212', justifyContent:'center', alignItems:'center'},
+  
+  // NEW GLASS STYLES
+  glassHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    padding: 20, paddingTop: 50, // More padding for top status bar
+    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)'
+  },
   header: { color: '#bc13fe', fontSize: 18, fontWeight: 'bold', letterSpacing: 2 },
   groupToggle: { color: '#00f3ff', fontWeight: 'bold' },
-  sectionTitle: { color: '#666', fontSize: 12, marginBottom: 10, letterSpacing: 1, fontWeight: 'bold' },
   
-  groupInputContainer: { flexDirection: 'row', marginBottom: 15 },
-  input: { flex: 1, backgroundColor: '#1E1E1E', color: '#fff', padding: 10, borderRadius: 5, borderWidth: 1, borderColor: '#333' },
+  glassInputContainer: { flexDirection: 'row', padding: 15, margin: 15, borderRadius: 15, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  input: { flex: 1, color: '#fff', padding: 10 },
   createButton: { backgroundColor: '#00f3ff', justifyContent: 'center', paddingHorizontal: 15, marginLeft: 10, borderRadius: 5 },
   createText: { color: '#000', fontWeight: 'bold' },
 
-  groupCard: { 
-    flexDirection: 'row', alignItems: 'center', marginBottom: 10, padding: 15,
-    backgroundColor: '#1E1E1E', borderRadius: 8,
-    borderLeftWidth: 4, borderLeftColor: '#39ff14', 
-  },
-  groupAvatar: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#333', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  groupAvatarText: { color: '#39ff14', fontWeight: 'bold', fontSize: 18 },
-  groupNameText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  groupMembersText: { color: '#666', fontSize: 12 },
+  sectionTitle: { color: '#aaa', fontSize: 12, marginBottom: 10, marginTop: 10, letterSpacing: 1, fontWeight: 'bold', marginLeft: 5 },
 
-  userCard: { 
-    flexDirection: 'row', alignItems: 'center', marginBottom: 10, padding: 15,
-    backgroundColor: '#1E1E1E', borderRadius: 8,
-    borderLeftWidth: 4, borderLeftColor: '#00f3ff', 
+  // GLASS CARD STYLES
+  glassCardOuter: {
+    marginBottom: 10, borderRadius: 12, overflow: 'hidden',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
   },
-  selectedCard: { backgroundColor: '#2a2a2a', borderColor: '#39ff14', borderWidth: 1 },
+  cardInner: {
+      flexDirection: 'row', alignItems: 'center', padding: 15,
+      backgroundColor: 'rgba(255, 255, 255, 0.03)', // Very subtle fill
+      borderLeftWidth: 4,
+  },
+  selectedGlass: { borderColor: '#39ff14', backgroundColor: 'rgba(57, 255, 20, 0.1)' },
+
+  // Common Elements
+  groupAvatar: { width: 40, height: 40, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  groupAvatarText: { color: '#39ff14', fontWeight: 'bold', fontSize: 18 },
+  nameText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  subText: { color: '#aaa', fontSize: 12 },
   
-  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 15, backgroundColor: '#121212', borderWidth: 1, borderColor: '#bc13fe', justifyContent: 'center', alignItems: 'center' },
+  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 15, backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: '#bc13fe', justifyContent: 'center', alignItems: 'center' },
   avatarText: { color: '#bc13fe', fontSize: 18, fontWeight: 'bold' },
   userInfo: { flex: 1 },
-  usernameText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   statusText: { color: '#00f3ff', fontSize: 10, marginTop: 4 },
   
   checkbox: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#666', justifyContent: 'center', alignItems: 'center' },
   checkedBox: { backgroundColor: '#39ff14', borderColor: '#39ff14' },
 
-  // LOGOUT BUTTON STYLES
-  logoutButton: { 
-    marginTop: 30, 
-    marginBottom: 20, 
-    padding: 15, 
-    borderWidth: 1, 
-    borderColor: '#ff0055', 
-    borderRadius: 8, 
-    alignItems: 'center' 
-  },
+  logoutButton: { marginTop: 30, marginBottom: 20, padding: 15, borderWidth: 1, borderColor: '#ff0055', borderRadius: 8, alignItems: 'center', marginHorizontal: 15 },
   logoutText: { color: '#ff0055', fontWeight: 'bold', letterSpacing: 1 }
 });
