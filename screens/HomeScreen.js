@@ -3,12 +3,12 @@ import { collection, doc, onSnapshot, query, setDoc, where } from 'firebase/fire
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { auth, database } from '../firebaseConfig';
-// 1. NEW IMPORTS
+
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function HomeScreen() {
-  // ... (Keep all your existing state variables and useEffect logic exactly the same) ...
+  
   const navigation = useNavigation();
   const [users, setUsers] = useState([]);
   const [myGroups, setMyGroups] = useState([]); 
@@ -63,9 +63,9 @@ export default function HomeScreen() {
   if (loading) return <View style={[styles.loadingContainer]}><ActivityIndicator size="large" color="#00f3ff"/></View>;
 
   return (
-    // 2. AURORA BACKGROUND
+    
     <LinearGradient
-        colors={['#000000', '#1A1A2E', '#16213E', '#0f3460']} // Darker, cooler aurora
+        colors={['#000000', '#1A1A2E', '#16213E', '#0f3460']} 
         start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
         style={styles.container}
     >
@@ -134,10 +134,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, backgroundColor: '#121212', justifyContent:'center', alignItems:'center'},
   
-  // NEW GLASS STYLES
+  
   glassHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 20, paddingTop: 50, // More padding for top status bar
+    padding: 20, paddingTop: 50, 
     borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)'
   },
   header: { color: '#bc13fe', fontSize: 18, fontWeight: 'bold', letterSpacing: 2 },
