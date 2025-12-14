@@ -3,7 +3,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { auth, database } from '../firebaseConfig';
-// 1. NEW IMPORTS
+
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -17,7 +17,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleAuth = async () => {
-    // ... (Keep your existing handleAuth logic exactly the same) ...
+    
     if (!email || !password) return Alert.alert("Error", "Please fill in all fields");
     if (!isLogin && !username) return Alert.alert("Error", "Please enter a username");
 
@@ -40,9 +40,9 @@ export default function LoginScreen() {
   };
 
   return (
-    // 2. AURORA BACKGROUND (Linear Gradient)
+    
     <LinearGradient
-      colors={['#0f0c29', '#302b63', '#24243e', '#000000']} // Deep purple/blue aurora vibes
+      colors={['#0f0c29', '#302b63', '#24243e', '#000000']} 
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   glassContainer: {
     borderRadius: 20,
     padding: 20,
-    overflow: 'hidden', // Required for BlurView to respect borderRadius
+    overflow: 'hidden', 
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.15)', // Subtle white border defining the glass
   },
