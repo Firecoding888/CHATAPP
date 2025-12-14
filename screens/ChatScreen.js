@@ -6,12 +6,12 @@ import { useEffect, useLayoutEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Composer, GiftedChat, InputToolbar } from 'react-native-gifted-chat';
 import { auth, database } from '../firebaseConfig';
-// 1. NEW IMPORTS
+
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ChatScreen() {
-  // ... (Keep your existing logic exactly the same) ...
+  
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
@@ -22,7 +22,7 @@ export default function ChatScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({ 
       title: chatName || 'Chat',
-      headerTransparent: true, // Make header transparent for glass effect
+      headerTransparent: true, 
       headerBackground: () => (
         <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
       ),
@@ -60,7 +60,7 @@ export default function ChatScreen() {
     } catch (error) { Alert.alert("Image Error", error.message); } finally { setLoading(false); }
   };
 
-  // --- CUSTOM GLASS INPUT BAR COMPONENTS ---
+  
   const renderInputToolbar = (props) => (
     <BlurView intensity={40} tint="dark" style={styles.glassInputToolbar}>
        <InputToolbar {...props} containerStyle={{ backgroundColor: 'transparent', borderTopWidth: 0 }} />
@@ -78,9 +78,9 @@ export default function ChatScreen() {
   );
 
   return (
-    // 2. AURORA BACKGROUND
+    
     <LinearGradient
-        colors={['#0f0c29', '#302b63', '#24243e']} // Slightly different aurora blend
+        colors={['#0f0c29', '#302b63', '#24243e']} 
         style={{ flex: 1 }}
     >
       {loading && (<View style={styles.loadingOverlay}><ActivityIndicator size="large" color="#00f3ff" /></View>)}
@@ -97,7 +97,7 @@ export default function ChatScreen() {
         renderInputToolbar={renderInputToolbar}
         renderComposer={renderComposer}
 
-        // Bubble Styles (Keep Neon)
+        
         bubbleStyle={{
           right: { backgroundColor: 'rgba(57, 255, 20, 0.8)', borderRadius: 0, borderBottomRightRadius: 15, borderWidth: 1, borderColor: '#39ff14' },
           left: { backgroundColor: 'rgba(42, 42, 42, 0.8)', borderRadius: 0, borderTopLeftRadius: 15, borderWidth: 1, borderColor: '#bc13fe' }
@@ -112,16 +112,16 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  // New Glass Input Styles
+  
   glassInputToolbar: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.15)',
     paddingTop: 5,
-    paddingBottom: 5, // Adjust for specific phone models if needed
+    paddingBottom: 5, 
   },
   glassComposer: {
     color: '#fff',
-    backgroundColor: 'rgba(255,255,255,0.05)', // Subtle fill for input area
+    backgroundColor: 'rgba(255,255,255,0.05)', 
     borderRadius: 20,
     paddingTop: 8,
     paddingHorizontal: 15,
